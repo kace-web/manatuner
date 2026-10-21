@@ -130,3 +130,12 @@ L'autorisation commit/push main/Vercel est acquise. Le prompt §4 exige cependan
 ## Reprise publication — 14 septembre 2026
 
 Après présentation du candidat final-08, le propriétaire a donné l’instruction explicite « ok commit push ». L’attente de confirmation est levée par cette instruction ; aucune inspection visuelle humaine supplémentaire n’est prétendue. Le commit applicatif6bc960f est validé, ses208fichiers source correspondent toujours au manifeste final-08. Publication par push normal origin/main puis intégration Vercel native existante ; CI, identité du déploiement et smoke seront consignés dans publication-verifiee/ après exécution. Les mentions d’attente antérieures sont historiques. Les réserves humaines, Firefox et protocoles partiels restent inchangées.
+
+## Environnement de développement Base44 — 21 octobre 2026
+
+- Stack sandbox : `docker-compose.base44.yml`, service `manatuner-web` (image de base `node:22`, source montée en bind, `node_modules` en volume nommé). `npm ci` s'exécute au démarrage du conteneur, puis `npm run dev` (Vite) sur le port 3000 : les modifications de sources apparaissent sans reconstruction d'image. La source servie est bien celle du clone (react-refresh + `/src/main.tsx` en module), pas un bundle préconstruit.
+- Aucune base de données, aucun serveur applicatif, aucun secret requis : ManaTuner est une SPA entièrement côté client (Scryfall et Google Fonts sont appelés depuis le navigateur). `.base44/environment.json` ne déclare donc aucun secret.
+- Sentry reste volontairement non configuré (`VITE_SENTRY_DSN` absent) : aucun trafic Sentry, conformément à l'invariant projet.
+- Le serveur Vite doit accepter l'hôte du proxy de prévisualisation (`<port>-<id de sandbox>.e2b.app`). C'est assuré par la variable fournie par la plateforme `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`, transmise telle quelle par Compose (Vite ≥ 6.1 l'ajoute à `server.allowedHosts`) ; `vite.config.ts` n'est pas modifié. `BASE44_PREVIEW_MODE` est passé au service mais aucun code applicatif ne le lit aujourd'hui.
+- Vérification utile au-delà d'un HTTP 200 : l'accueil peint son hero, et le parcours Analyzer (`Try Example` puis `Analyze Manabase`) affiche « Analysis Results » avec un Health Score. Contrôle d'hôte : `curl -H 'Host: 3000-<id>.e2b.app' http://localhost:3000/` répond 200.
+- La branche courante (`base44/...`) est la branche de travail créée par la plateforme pour l'agent ; celui-ci n'en crée aucune autre et ne touche pas `main`. Toute publication reste régie par les consignes du propriétaire (main / Vercel).

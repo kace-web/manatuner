@@ -1,0 +1,51 @@
+# Base44 sandbox stack — ManaTuner (client-side Vite + React SPA).
+#
+# Runs the app FROM THE CLONED SOURCE via the Vite dev server, so edits show up
+# without rebuilding an image. There is no backend and no database: every
+# calculation happens in the browser, and the only network calls go to Scryfall
+# (card data/images) and Google Fonts.
+#
+# No credentials are required. Sentry is OPTIONAL and deliberately left unset
+# (project invariant: no Sentry traffic without an explicit owner decision).
+services:
+  manatuner-web:
+    image: node:22
+    working_dir: /app
+    restart: on-failure
+    labels:
+      base44.project: ManaTuner
+      base44.kind: web
+      base44.port: '3000'
+    ports:
+      - '3000:3000'
+    volumes:
+      # Source from the checkout (live reload) …
+      - ./:/app
+      # … but keep node_modules in a named volume so it is not shadowed by the mount.
+      - manatuner_node_modules:/app/node_modules
+    environment:
+      # Platform-provided pass-through: lets the Vite dev server accept the preview
+      # proxy host (Vite >= 6.1 appends this value to server.allowedHosts).
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+      - BASE44_PREVIEW_MODE
+    command:
+      - sh
+      - -ec
+      - |
+        CI=true npm ci --no-audit --no-fund
+        exec npm run dev -- --host 0.0.0.0 --port 3000 --strictPort
+    healthcheck:
+      # Real dev-server responsiveness (index.html served), not just an open port.
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:3000/'').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous grace period: `npm ci` runs before Vite starts on first boot.
+      start_period: 240s
+
+volumes:
+  manatuner_node_modules:
